@@ -1,0 +1,308 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String    @id @default(cuid())
+  username         String    @unique
+  email            String    @unique
+  passwordHash     String    @map("password_hash")
+  fullName         String?   @map("full_name")
+  phone            String?
+  dateOfBirth      DateTime? @map("date_of_birth")
+  gender           String?
+  category         String?   // General, OBC, SC, ST, EWS
+  annualIncome     Decimal?  @map("annual_income")
+  educationLevel   String?   @map("education_level")
+  fieldOfStudy     String?   @map("field_of_study")
+  state            String?
+  city             String?
+  role             String    @default("user") // user, admin
+  isActive         Boolean   @default(true) @map("is_active")
+  emailVerified    Boolean   @default(false) @map("email_verified")
+  lastLogin        DateTime? @map("last_login")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  applications  Application[]
+  bookmarks     Bookmark[]
+  reviews       Review[]
+  notifications Notification[]
+  activityLogs  ActivityLog[]
+
+  @@map("users")
+}
+
+model Scholarship {
+  id                   String    @id @default(cuid())
+  title                String
+  description          String?
+  eligibility          String
+  benefits             String
+  amount               Decimal?
+  applicationDeadline  DateTime? @map("application_deadline")
+  resultDate          DateTime? @map("result_date")
+  category            String
+  level               String    // Undergraduate, Postgraduate, PhD, etc.
+  fieldOfStudy        String[]  @map("field_of_study")
+  providingOrganization String  @map("providing_organization")
+  officialUrl         String    @map("official_url")
+  applicationUrl      String?   @map("application_url")
+  documentsRequired   String[]  @map("documents_required")
+  selectionProcess    String?   @map("selection_process")
+  contactInfo         Json?     @map("contact_info")
+  tags                String[]
+  state               String?
+  country             String    @default("India")
+  isActive            Boolean   @default(true) @map("is_active")
+  isFeatured          Boolean   @default(false) @map("is_featured")
+  qualityScore        Float     @default(0.0) @map("quality_score")
+  linkValidated       Boolean   @default(false) @map("link_validated")
+  lastValidated       DateTime? @map("last_validated")
+  scrapingSource      String?   @map("scraping_source")
+  sourceId            String?   @map("source_id")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  applications Application[]
+  bookmarks    Bookmark[]
+  reviews      Review[]
+
+  @@map("scholarships")
+}
+
+model Application {
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  scholarshipId  String    @map("scholarship_id")
+  status         String    @default("draft") // draft, submitted, under_review, approved, rejected, withdrawn
+  applicationData Json?    @map("application_data")
+  notes          String?
+  adminNotes     String?   @map("admin_notes")
+  submittedAt    DateTime? @map("submitted_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scholarship Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scholarshipId])
+  @@map("applications")
+}
+
+model Bookmark {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  scholarshipId String   @map("scholarship_id")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scholarship Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scholarshipId])
+  @@map("bookmarks")
+}
+
+model Review {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  scholarshipId String   @map("scholarship_id")
+  rating        Int      @default(5)
+  comment       String?
+  isVerified    Boolean  @default(false) @map("is_verified")
+  isHelpful     Boolean  @default(false) @map("is_helpful")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scholarship Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scholarshipId])
+  @@map("reviews")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  type      String
+  title     String
+  message   String
+  metadata  Json      @default("{}")
+  priority  String    @default("normal") // low, normal, high, urgent
+  isRead    Boolean   @default(false) @map("is_read")
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  action      String
+  description String
+  metadata    Json     @default("{}")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("activity_logs")
+}
+
+model ScrapingJob {
+  id           String    @id @default(cuid())
+  source       String
+  status       String    @default("pending") // pending, running, completed, failed
+  totalUrls    Int       @default(0) @map("total_urls")
+  processedUrls Int      @default(0) @map("processed_urls")
+  successfulUrls Int     @default(0) @map("successful_urls")
+  failedUrls   Int       @default(0) @map("failed_urls")
+  duplicateUrls Int      @default(0) @map("duplicate_urls")
+  newScholarships Int    @default(0) @map("new_scholarships")
+  updatedScholarships Int @default(0) @map("updated_scholarships")
+  errors       String[]
+  metadata     Json      @default("{}")
+  startedAt    DateTime? @map("started_at")
+  completedAt  DateTime? @map("completed_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("scraping_jobs")
+}
+
+model Cache {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("cache")
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  eventType String   @map("event_type")
+  userId    String?  @map("user_id")
+  sessionId String?  @map("session_id")
+  metadata  Json     @default("{}")
+  timestamp DateTime @default(now())
+
+  @@map("analytics_events")
+}
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  category  String   @default("general")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_config")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  icon        String?
+  color       String?
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("categories")
+}
+
+model FAQ {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String   @default("general")
+  isActive  Boolean  @default(true) @map("is_active")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("faqs")
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  role      String?
+  content   String
+  rating    Int      @default(5)
+  image     String?
+  isActive  Boolean  @default(true) @map("is_active")
+  isFeatured Boolean @default(false) @map("is_featured")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("testimonials")
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  status    String   @default("pending") // pending, responded, closed
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("contact_submissions")
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  subject   String
+  content   String
+  variables Json     @default("{}")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("email_templates")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id")
+  action    String
+  entity    String
+  entityId  String   @map("entity_id")
+  oldValues Json?    @map("old_values")
+  newValues Json?    @map("new_values")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}

@@ -1,0 +1,70 @@
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  // Mock scraping jobs data
+  const mockJobs = [
+    {
+      id: "job_1",
+      source_url: "https://www.scholarships.gov.in/",
+      source_name: "National Scholarship Portal",
+      status: "running",
+      job_type: "full_scrape",
+      priority: "high",
+      items_scraped: 245,
+      items_validated: 230,
+      items_saved: 225,
+      items_rejected: 5,
+      started_at: "2024-01-15T10:30:00Z",
+      completed_at: null,
+      duration: null,
+      errors: null,
+      warnings: ["Some duplicate entries found"],
+      retry_count: 0,
+      created_at: "2024-01-15T10:30:00Z",
+    },
+    {
+      id: "job_2",
+      source_url: "https://www.ugc.ac.in/scholarships/",
+      source_name: "UGC Scholarships",
+      status: "completed",
+      job_type: "update_scrape",
+      priority: "medium",
+      items_scraped: 156,
+      items_validated: 156,
+      items_saved: 150,
+      items_rejected: 6,
+      started_at: "2024-01-15T09:00:00Z",
+      completed_at: "2024-01-15T09:45:00Z",
+      duration: 45,
+      errors: null,
+      warnings: null,
+      retry_count: 0,
+      created_at: "2024-01-15T09:00:00Z",
+    },
+    {
+      id: "job_3",
+      source_url: "https://www.aicte-india.org/schemes/",
+      source_name: "AICTE Schemes",
+      status: "failed",
+      job_type: "full_scrape",
+      priority: "low",
+      items_scraped: 0,
+      items_validated: 0,
+      items_saved: 0,
+      items_rejected: 0,
+      started_at: "2024-01-15T08:00:00Z",
+      completed_at: "2024-01-15T08:05:00Z",
+      duration: 5,
+      errors: ["Connection timeout", "Invalid response format"],
+      warnings: null,
+      retry_count: 2,
+      created_at: "2024-01-15T08:00:00Z",
+    },
+  ];
+
+  return NextResponse.json({
+    data: mockJobs,
+    success: true,
+    message: "Mock scraping jobs data",
+  });
+}
