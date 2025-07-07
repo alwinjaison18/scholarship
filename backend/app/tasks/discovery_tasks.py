@@ -61,7 +61,8 @@ def discover_new_scholarship_sources(self, max_depth: int = 2, max_pages_per_sou
                 'https://nstfdc.nic.in/en/loan-schemes-scholarship'
             ]
 
-            logger.info(f"Starting dynamic discovery with {len(seed_urls)} seed URLs")
+            logger.info(
+                f"Starting dynamic discovery with {len(seed_urls)} seed URLs")
 
             # Start discovery process
             discovered_pages = asyncio.run(
@@ -122,12 +123,15 @@ def discover_new_scholarship_sources(self, max_depth: int = 2, max_pages_per_sou
             })
             db.commit()
 
-            logger.info(f"Discovery completed. Found {len(discovered_pages)} sources, {new_sources_count} new")
+            logger.info(
+                f"Discovery completed. Found {len(discovered_pages)} sources, {new_sources_count} new")
 
             # Trigger immediate scraping of high-priority sources
             if high_priority_sources:
-                logger.info(f"Triggering immediate scraping of {len(high_priority_sources)} high-priority sources")
-                for source in high_priority_sources[:5]:  # Limit to top 5 to avoid overload
+                logger.info(
+                    f"Triggering immediate scraping of {len(high_priority_sources)} high-priority sources")
+                # Limit to top 5 to avoid overload
+                for source in high_priority_sources[:5]:
                     scrape_discovered_source.delay(
                         source_url=source.url,
                         source_name=source.title,
@@ -188,7 +192,8 @@ def scrape_discovered_source(self, source_url: str, source_name: str, priority: 
             # Initialize scraping service
             scraping_service = ScrapingService()
 
-            logger.info(f"Starting scraping of discovered source: {source_name}")
+            logger.info(
+                f"Starting scraping of discovered source: {source_name}")
 
             # Extract domain name for configuration
             from urllib.parse import urlparse
@@ -229,7 +234,8 @@ def scrape_discovered_source(self, source_url: str, source_name: str, priority: 
                             description=scraped_scholarship.description,
                             amount=scraped_scholarship.amount,
                             deadline=scraped_scholarship.deadline,
-                            eligibility=", ".join(scraped_scholarship.eligibility),
+                            eligibility=", ".join(
+                                scraped_scholarship.eligibility),
                             application_url=scraped_scholarship.application_url,
                             source=scraped_scholarship.source,
                             category=scraped_scholarship.category,
@@ -257,7 +263,7 @@ def scrape_discovered_source(self, source_url: str, source_name: str, priority: 
             source_record = db.query(ScrapingSource).filter(
                 ScrapingSource.url == source_url
             ).first()
-            
+
             if source_record:
                 source_record.last_scraped = datetime.utcnow()
                 source_record.total_scholarships = new_scholarships + updated_scholarships
@@ -278,7 +284,8 @@ def scrape_discovered_source(self, source_url: str, source_name: str, priority: 
             })
             db.commit()
 
-            logger.info(f"Scraping completed for {source_name}. New: {new_scholarships}, Updated: {updated_scholarships}")
+            logger.info(
+                f"Scraping completed for {source_name}. New: {new_scholarships}, Updated: {updated_scholarships}")
 
             return {
                 "status": "success",
@@ -290,7 +297,8 @@ def scrape_discovered_source(self, source_url: str, source_name: str, priority: 
             }
 
     except Exception as e:
-        logger.error(f"Error scraping discovered source {source_name}: {str(e)}")
+        logger.error(
+            f"Error scraping discovered source {source_name}: {str(e)}")
 
         # Update job status to failed
         try:
@@ -340,15 +348,17 @@ def intelligent_discovery_scheduler(self):
                 ).all()
 
                 if recent_jobs:
-                    avg_new_scholarships = sum(job.new_scholarships or 0 for job in recent_jobs) / len(recent_jobs)
+                    avg_new_scholarships = sum(
+                        job.new_scholarships or 0 for job in recent_jobs) / len(recent_jobs)
                     if avg_new_scholarships < 5:  # Low productivity threshold
                         should_run_discovery = True
                         discovery_reason = "Low productivity from existing sources"
 
             if should_run_discovery:
                 logger.info(f"Triggering discovery: {discovery_reason}")
-                discover_new_scholarship_sources.delay(max_depth=2, max_pages_per_source=25)
-                
+                discover_new_scholarship_sources.delay(
+                    max_depth=2, max_pages_per_source=25)
+
                 return {
                     "status": "discovery_triggered",
                     "reason": discovery_reason
@@ -388,9 +398,10 @@ def validate_discovered_sources(self):
                         priority="validation"
                     )
                     validated_count += 1
-                    
+
                 except Exception as e:
-                    logger.error(f"Error validating source {source.url}: {str(e)}")
+                    logger.error(
+                        f"Error validating source {source.url}: {str(e)}")
                     # Mark source as problematic
                     source.status = "validation_failed"
                     source.metadata = source.metadata or {}
